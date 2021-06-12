@@ -1,0 +1,20 @@
+CREATE TABLE grocery_item (
+    id INTEGER not null PRIMARY KEY,
+    name TEXT NOT NULL,
+    current TEXT NOT NULL,
+    minimum INTEGER NOT NULL
+);
+
+CREATE TABLE list (
+    id INTEGER not null PRIMARY KEY,
+    title TEXT NOT NULL,
+    FOREIGN KEY (items) REFERENCES list_item (grocery_item_id) ON DELETE CASCADE
+);
+
+CREATE TABLE list_item (
+    quantity INTEGER NOT NULL,
+    checked INTEGER,
+    position INTEGER NOT NULL,
+    FOREIGN KEY (grocery_item_id) REFERENCES grocery_item (id) ON DELETE CASCADE,
+    FOREIGN KEY (on_list) REFERENCES list (id) ON DELETE CASCADE
+);

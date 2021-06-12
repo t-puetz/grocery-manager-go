@@ -1,27 +1,42 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
+	_ "github.com/mattn/go-sqlite3"
 )
 
+// In the case of go-sqlite3, the underscore import is used for the side-effect
+// of registering the sqlite3 driver as a database driver in the init() function,
+// without importing any other functions
+// init functions run even before main does!
+
 func main() {
-	fmt.Println("Starting web server now...\n")
+	db := openDB()
+	dbscheme := readInDBSchemeDefinition()
+	createScheme(db, dbscheme)
 	srvMain(8080)
 }
 
 func srvMain(port int) {
-	fmt.Println("Rest API v2.0 - Mux Routers")
 	router := handleRESTRequests()
 	startWebSrv(port, router)
 }
 
+// Start webserver section
+
 func startWebSrv(port int, router *mux.Router) {
 	portStr := fmt.Sprint(port)
 	fmt.Println(portStr)
+
+	fmt.Println("Starting web server now...\n")
+	fmt.Println("Rest API v2.0 - Mux Routers\n")
+
 	log.Fatal(http.ListenAndServe(":"+portStr, router))
 }
 
@@ -73,3 +88,42 @@ func patchItems(w http.ResponseWriter, r *http.Request) {
 func deleteItems(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Hit REST end point DELETE /api/items/{id}")
 }
+
+// End webserver section
+
+// Start sqlite DB section
+
+func openDB() *sql.DB {
+	db, err := sql.Open("sqlite3", "grocery-manager-go.sqlite")
+
+	if err != nil {
+		log.Panic(err)
+	}
+
+	fmt.Println("sqlite3 DB opened successfully (grocery-manager-go.sqlite)\n")
+
+	return db
+}
+
+func readInDBSchemeDefinition() string {
+	content, err := ioutil.ReadFile("db.scheme")
+
+	if err != nil {
+		log.Panic(err)
+	}
+
+	contentStr := string(content)
+	return contentStr
+}
+
+func createScheme(db *sql.DB, dbscheme string) {
+	defer db.Close()
+
+	_, err := db.Exec(dbscheme)
+
+	if err != nil {
+		log.Panic(err)
+	}
+}
+
+// End sqlite DB section
