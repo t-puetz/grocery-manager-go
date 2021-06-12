@@ -32,11 +32,7 @@ func srvMain(port int) {
 
 func startWebSrv(port int, router *mux.Router) {
 	portStr := fmt.Sprint(port)
-	fmt.Println(portStr)
-
-	fmt.Println("Starting web server now...\n")
-	fmt.Println("Rest API v2.0 - Mux Routers\n")
-
+	log.Printf("Starting web server now at port %v...\n", portStr)
 	log.Fatal(http.ListenAndServe(":"+portStr, router))
 }
 
@@ -59,34 +55,34 @@ func handleRESTRequests() *mux.Router {
 }
 
 func getLists(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Hit REST end point GET /api/lists")
+	log.Println("Hit REST end point GET /api/lists")
 }
 func getListsID(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Hit REST end point GET /api/lists/{id}")
+	log.Println("Hit REST end point GET /api/lists/{id}")
 }
 func postLists(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Hit REST end point POST /api/lists")
+	log.Println("Hit REST end point POST /api/lists")
 }
 func patchListsID(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Hit REST end point PATCH /api/lists/{id}")
+	log.Println("Hit REST end point PATCH /api/lists/{id}")
 }
 func patchListsGroceryItemID(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Hit REST end point PATCH /api/lists/{id}/{groceryItemID}")
+	log.Println("Hit REST end point PATCH /api/lists/{id}/{groceryItemID}")
 }
 func deleteListsGroceryItemID(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Hit REST end point DELETE /api/lists/{id}")
+	log.Println("Hit REST end point DELETE /api/lists/{id}")
 }
 func getItems(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Hit REST end point GET /api/items")
+	log.Println("Hit REST end point GET /api/items")
 }
 func postItems(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Hit REST end point POST /api/items")
+	log.Println("Hit REST end point POST /api/items")
 }
 func patchItems(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Hit REST end point PATCH /api/items/{id}")
+	log.Println("Hit REST end point PATCH /api/items/{id}")
 }
 func deleteItems(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Hit REST end point DELETE /api/items/{id}")
+	log.Println("Hit REST end point DELETE /api/items/{id}")
 }
 
 // End webserver section
@@ -100,7 +96,7 @@ func openDB() *sql.DB {
 		log.Panic(err)
 	}
 
-	fmt.Println("sqlite3 DB opened successfully (grocery-manager-go.sqlite)\n")
+	log.Println("sqlite3 DB opened successfully (grocery-manager-go.sqlite)")
 
 	return db
 }
@@ -124,6 +120,8 @@ func createScheme(db *sql.DB, dbscheme string) {
 	if err != nil {
 		log.Panic(err)
 	}
+
+	log.Println("sqlite DB grocery-manager-go.sqlite is setup and ready...")
 }
 
 // End sqlite DB section
