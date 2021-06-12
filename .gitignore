@@ -1,6 +1,7 @@
 grocery-manager-go.sqlite
 
 # Binaries for programs and plugins
+main
 *.exe
 *.exe~
 *.dll

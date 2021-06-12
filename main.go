@@ -2,10 +2,12 @@ package main
 
 import (
 	"database/sql"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 	_ "github.com/mattn/go-sqlite3"
@@ -17,18 +19,43 @@ import (
 // init functions run even before main does!
 
 func main() {
+	flags := parseFlags()
+	log.Printf("Flags provided: %v", flags)
+
 	db := openDB()
 	dbscheme := readInDBSchemeDefinition()
 	createScheme(db, dbscheme)
-	srvMain(8080)
+
+	portStr := flags["--port"]
+	portInt, _ := strconv.Atoi(portStr)
+	srvMain(portInt)
 }
+
+func parseFlags() map[string]string {
+	flagMap := make(map[string]string)
+
+	portArg := flag.String("port", "", `Port you want the webserver to run at.`)
+	flag.Parse()
+
+	if *portArg == "" {
+		defaultPort := "8080"
+		pDefaultPort := &defaultPort
+		portArg = pDefaultPort
+		log.Printf("You did not provide --port flag. Will try to bind webserver at port %s.", *portArg)
+	}
+
+	port := *portArg
+	flagMap["--port"] = port
+
+	return flagMap
+}
+
+// Start webserver section
 
 func srvMain(port int) {
 	router := handleRESTRequests()
 	startWebSrv(port, router)
 }
-
-// Start webserver section
 
 func startWebSrv(port int, router *mux.Router) {
 	portStr := fmt.Sprint(port)
