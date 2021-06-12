@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -17,6 +18,31 @@ import (
 // of registering the sqlite3 driver as a database driver in the init() function,
 // without importing any other functions
 // init functions run even before main does!
+
+type listTableJSON struct {
+	ID    int    `json: "ID"`
+	title string `json: "title"`
+	items []int  `json: "[items]"`
+}
+
+type listItemTableJSON struct {
+	groceryItemID int `"groceryItemID"`
+	quantity      int `json: "quantity"`
+	checked       int `json: "checked"`
+	position      int `json: "position"`
+	onList        int `json: "onList"`
+}
+
+type groceryItemTableJSON struct {
+	ID      int    `json: "ID"`
+	name    string `json: "name"`
+	current int    `json: "current"`
+	maximum int    `json: "maximum"`
+}
+
+var lists []listTableJSON
+var listItems []listItemTableJSON
+var groceryItems []groceryItemTableJSON
 
 func main() {
 	flags := parseFlags()
@@ -83,7 +109,50 @@ func handleRESTRequests() *mux.Router {
 
 func getLists(w http.ResponseWriter, r *http.Request) {
 	log.Println("Hit REST end point GET /api/lists")
+
+	db := openDB()
+	rows, err := db.Query("SELECT * FROM list;")
+
+	if err != nil {
+		log.Panic(err)
+	}
+
+	log.Printf("Endpoint GET /api/lists raw DB return as map:\n%v", rows)
+
+	for rows.Next() {
+		var rowSink listTableJSON
+		content := make([]*string, 3)
+
+		//SQL Scan method parameter values must be of type interface{}. So we need an intermediate slice
+
+		ims := make([]interface{}, 3)
+
+		for i := range ims {
+			ims[i] = &content[i]
+		}
+
+		err = rows.Scan(ims[0], ims[1], ims[2])
+
+		if err != nil {
+			lists = append(lists, rowSink)
+			log.Printf("Panic while scanning result row: JSON structure returned to client until now:\n%v\n", lists)
+			log.Panic(err)
+		}
+
+		err = json.Unmarshal([]byte(*content[0]+*content[1]+*content[2]), &rowSink)
+
+		if err != nil {
+			lists = append(lists, rowSink)
+			log.Printf("Panic in json.Unmarshal(): JSON structure returned to client until now:\n%v\n", lists)
+			log.Panic(err)
+		}
+
+		lists = append(lists, rowSink)
+
+		log.Printf("JSON structure returned to client:\n%v\n", lists)
+	}
 }
+
 func getListsID(w http.ResponseWriter, r *http.Request) {
 	log.Println("Hit REST end point GET /api/lists/{id}")
 }
