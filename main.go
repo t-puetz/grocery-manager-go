@@ -132,24 +132,26 @@ func getLists(w http.ResponseWriter, r *http.Request) {
 		}
 
 		err = rows.Scan(ims[0], ims[1], ims[2])
+		log.Printf("%v", *(content[0]))
+		log.Printf("%v", *(content[1]))
+		log.Printf("%v", *(content[2]))
+		log.Printf("%v", err)
 
 		if err != nil {
-			lists = append(lists, rowSink)
-			log.Printf("Panic while scanning result row: JSON structure returned to client until now:\n%v\n", lists)
+			log.Printf("Something went wrong while reading in table row:\n%v\n", lists)
 			log.Panic(err)
 		}
 
-		err = json.Unmarshal([]byte(*content[0]+*content[1]+*content[2]), &rowSink)
+		rowSink.ID, _ = strconv.Atoi(*(content[0]))
+		rowSink.title = *(content[1])
+		itemsInt, _ := strconv.Atoi(*(content[2]))
+		rowSink.items = append(rowSink.items, itemsInt)
 
-		if err != nil {
-			lists = append(lists, rowSink)
-			log.Printf("Panic in json.Unmarshal(): JSON structure returned to client until now:\n%v\n", lists)
-			log.Panic(err)
-		}
+		log.Printf("Control print of list struct before encoding to JSON:\n%v", rowSink)
 
-		lists = append(lists, rowSink)
+		responsePayload := json.NewEncoder(w).Encode(rowSink)
 
-		log.Printf("JSON structure returned to client:\n%v\n", lists)
+		log.Printf("JSON structure returned to client:\n%v\n", responsePayload)
 	}
 }
 
