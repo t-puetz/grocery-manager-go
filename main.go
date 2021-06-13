@@ -119,6 +119,8 @@ func getLists(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Endpoint GET /api/lists raw DB return as map:\n%v", rows)
 
+	var rowSinks []listTableJSON
+
 	for rows.Next() {
 		var rowSink listTableJSON
 		content := make([]*string, 3)
@@ -132,10 +134,10 @@ func getLists(w http.ResponseWriter, r *http.Request) {
 		}
 
 		err = rows.Scan(ims[0], ims[1], ims[2])
-		log.Printf("%v", *(content[0]))
-		log.Printf("%v", *(content[1]))
-		log.Printf("%v", *(content[2]))
-		log.Printf("%v", err)
+		// log.Printf("%v", *(content[0]))
+		// log.Printf("%v", *(content[1]))
+		// log.Printf("%v", *(content[2]))
+		// log.Printf("%v", err)
 
 		if err != nil {
 			log.Printf("Something went wrong while reading in table row:\n%v\n", lists)
@@ -147,12 +149,11 @@ func getLists(w http.ResponseWriter, r *http.Request) {
 		itemsInt, _ := strconv.Atoi(*(content[2]))
 		rowSink.items = append(rowSink.items, itemsInt)
 
-		log.Printf("Control print of list struct before encoding to JSON:\n%v", rowSink)
-
-		responsePayload := json.NewEncoder(w).Encode(rowSink)
-
-		log.Printf("JSON structure returned to client:\n%v\n", responsePayload)
+		rowSinks = append(rowSinks, rowSink)
 	}
+	log.Printf("Control print of list struct before encoding to JSON:\n%v", rowSinks)
+	responsePayload := json.NewEncoder(w).Encode(rowSinks)
+	log.Printf("JSON structure returned to client:\n%v\n", responsePayload)
 }
 
 func getListsID(w http.ResponseWriter, r *http.Request) {
