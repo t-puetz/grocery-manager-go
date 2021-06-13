@@ -40,9 +40,9 @@ type groceryItemTableJSON struct {
 	maximum int    `json: "maximum"`
 }
 
-var lists []listTableJSON
-var listItems []listItemTableJSON
-var groceryItems []groceryItemTableJSON
+// var lists []listTableJSON
+// var listItems []listItemTableJSON
+// var groceryItems []groceryItemTableJSON
 
 func main() {
 	flags := parseFlags()
@@ -137,10 +137,8 @@ func getLists(w http.ResponseWriter, r *http.Request) {
 		// log.Printf("%v", *(content[0]))
 		// log.Printf("%v", *(content[1]))
 		// log.Printf("%v", *(content[2]))
-		// log.Printf("%v", err)
 
 		if err != nil {
-			log.Printf("Something went wrong while reading in table row:\n%v\n", lists)
 			log.Panic(err)
 		}
 
@@ -152,34 +150,88 @@ func getLists(w http.ResponseWriter, r *http.Request) {
 		rowSinks = append(rowSinks, rowSink)
 	}
 	log.Printf("Control print of list struct before encoding to JSON:\n%v", rowSinks)
-	responsePayload := json.NewEncoder(w).Encode(rowSinks)
-	log.Printf("JSON structure returned to client:\n%v\n", responsePayload)
+	json.NewEncoder(w).Encode(rowSinks)
 }
 
 func getListsID(w http.ResponseWriter, r *http.Request) {
 	log.Println("Hit REST end point GET /api/lists/{id}")
+
+	vars := mux.Vars(r)
+	key := vars["id"]
+
+	db := openDB()
+	// DB returns a string even though on DB level ID is an INTEGER!
+	query := fmt.Sprintf("SELECT * FROM list where id = %s;", key)
+	rows, err := db.Query(query)
+
+	if err != nil {
+		log.Panic(err)
+	}
+
+	var rowSink listTableJSON
+	content := make([]*string, 3)
+
+	//SQL Scan method parameter values must be of type interface{}. So we need an intermediate slice
+
+	ims := make([]interface{}, 3)
+
+	// Although we can be SURE there will only be one Result
+	// sql still expects us to call .Next() or else it will fail
+	for rows.Next() {
+
+		for i := range ims {
+			ims[i] = &content[i]
+		}
+
+		err = rows.Scan(ims[0], ims[1], ims[2])
+
+		if err != nil {
+			log.Panic(err)
+		}
+
+		rowSink.ID, _ = strconv.Atoi(*(content[0]))
+		rowSink.title = *(content[1])
+		itemsInt, _ := strconv.Atoi(*(content[2]))
+		rowSink.items = append(rowSink.items, itemsInt)
+
+		log.Printf("Endpoint GET /api/list/{id} raw DB return as map:\n%v", rows)
+		log.Printf("Endpoint GET /api/list/{id} raw Go struct representing a row:\n%v", rowSink)
+
+		// TODO: Why does borwser same as with getLists()
+		// Only show JSON {"ID": 1}
+		// Although {"ID": 1, "title": "test_list", "items": "[112]"} is expected?
+		json.NewEncoder(w).Encode(rowSink)
+	}
 }
+
 func postLists(w http.ResponseWriter, r *http.Request) {
 	log.Println("Hit REST end point POST /api/lists")
 }
+
 func patchListsID(w http.ResponseWriter, r *http.Request) {
 	log.Println("Hit REST end point PATCH /api/lists/{id}")
 }
+
 func patchListsGroceryItemID(w http.ResponseWriter, r *http.Request) {
 	log.Println("Hit REST end point PATCH /api/lists/{id}/{groceryItemID}")
 }
+
 func deleteListsGroceryItemID(w http.ResponseWriter, r *http.Request) {
 	log.Println("Hit REST end point DELETE /api/lists/{id}")
 }
+
 func getItems(w http.ResponseWriter, r *http.Request) {
 	log.Println("Hit REST end point GET /api/items")
 }
+
 func postItems(w http.ResponseWriter, r *http.Request) {
 	log.Println("Hit REST end point POST /api/items")
 }
+
 func patchItems(w http.ResponseWriter, r *http.Request) {
 	log.Println("Hit REST end point PATCH /api/items/{id}")
 }
+
 func deleteItems(w http.ResponseWriter, r *http.Request) {
 	log.Println("Hit REST end point DELETE /api/items/{id}")
 }
