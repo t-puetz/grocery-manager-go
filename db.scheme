@@ -1,14 +1,14 @@
 CREATE TABLE IF NOT EXISTS grocery_item (
     id INTEGER not null PRIMARY KEY,
     name TEXT NOT NULL,
-    current TEXT NOT NULL,
+    current INTEGER NOT NULL,
     minimum INTEGER NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS list (
     id INTEGER not null PRIMARY KEY,
     title TEXT NOT NULL,
-    items TEXT,
+    items INTEGER,
     FOREIGN KEY (items) REFERENCES list_item (grocery_item_id) ON DELETE CASCADE
 );
 
