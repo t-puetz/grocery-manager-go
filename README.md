@@ -15,3 +15,14 @@ Usage:
   go build main.go and then run by executing produced main executable
   
   go build main.go --port 8081
+
+ 
+How to create test data withour a client:
+
+  open slite DB by running sqlite grocery-manager-go.sqlite
+  On the sqlite shell issue the following SQL statements:
+
+  sqlite> INSERT INTO list (id,title,items) VALUES (1,"test_list",112);
+  sqlite> INSERT INTO list_item (grocery_item_id,quantity,checked,position,on_list) VALUES (112,1,1,13,1);
+  sqlite> INSERT INTO grocery_item (id,name,current,minimum) VALUES (112,"Oatmeal",1,1);
+
