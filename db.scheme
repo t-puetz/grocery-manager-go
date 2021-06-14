@@ -8,8 +8,6 @@ CREATE TABLE IF NOT EXISTS grocery_item (
 CREATE TABLE IF NOT EXISTS list (
     id INTEGER not null PRIMARY KEY,
     title TEXT NOT NULL,
-    items INTEGER,
-    FOREIGN KEY (items) REFERENCES list_item (grocery_item_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS list_item (
