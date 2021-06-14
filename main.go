@@ -22,11 +22,10 @@ import (
 type listTableJSON struct {
 	ID    int    `json: "ID"`
 	title string `json: "title"`
-	items []int  `json: "[items]"`
 }
 
 type listItemTableJSON struct {
-	groceryItemID int `"groceryItemID"`
+	groceryItemID int `json: "groceryItemID"`
 	quantity      int `json: "quantity"`
 	checked       int `json: "checked"`
 	position      int `json: "position"`
@@ -39,10 +38,6 @@ type groceryItemTableJSON struct {
 	current int    `json: "current"`
 	maximum int    `json: "maximum"`
 }
-
-// var lists []listTableJSON
-// var listItems []listItemTableJSON
-// var groceryItems []groceryItemTableJSON
 
 func main() {
 	flags := parseFlags()
@@ -144,8 +139,6 @@ func getLists(w http.ResponseWriter, r *http.Request) {
 
 		rowSink.ID, _ = strconv.Atoi(*(content[0]))
 		rowSink.title = *(content[1])
-		itemsInt, _ := strconv.Atoi(*(content[2]))
-		rowSink.items = append(rowSink.items, itemsInt)
 
 		rowSinks = append(rowSinks, rowSink)
 	}
@@ -191,21 +184,40 @@ func getListsID(w http.ResponseWriter, r *http.Request) {
 
 		rowSink.ID, _ = strconv.Atoi(*(content[0]))
 		rowSink.title = *(content[1])
-		itemsInt, _ := strconv.Atoi(*(content[2]))
-		rowSink.items = append(rowSink.items, itemsInt)
 
 		log.Printf("Endpoint GET /api/list/{id} raw DB return as map:\n%v", rows)
 		log.Printf("Endpoint GET /api/list/{id} raw Go struct representing a row:\n%v", rowSink)
 
-		// TODO: Why does borwser same as with getLists()
+		// TODO: Why does the browser same as with getLists()
 		// Only show JSON {"ID": 1}
-		// Although {"ID": 1, "title": "test_list", "items": "[112]"} is expected?
+		// Although {"ID": 1, "title": "test_list"} is expected?
 		json.NewEncoder(w).Encode(rowSink)
 	}
 }
 
 func postLists(w http.ResponseWriter, r *http.Request) {
 	log.Println("Hit REST end point POST /api/lists")
+	db := openDB()
+
+	var rowSink listTableJSON
+	err := json.NewDecoder(r.Body).Decode(&rowSink)
+
+	if err != nil {
+		log.Panic(err)
+	}
+
+	log.Printf("Go struct generated from requestBody:\n%+v", rowSink)
+
+	// DB returns a string even though on DB level ID is an INTEGER!
+	listIDStr := strconv.Itoa(rowSink.ID)
+	listTitle := rowSink.title
+	sqlStatement := fmt.Sprintf("INSERT INTO list (id,title) VALUES (%s,%s);", listIDStr, listTitle)
+	_, err = db.Exec(sqlStatement)
+
+	if err != nil {
+		log.Panic(err)
+	}
+
 }
 
 func patchListsID(w http.ResponseWriter, r *http.Request) {
