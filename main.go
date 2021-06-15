@@ -139,7 +139,6 @@ func getLists(w http.ResponseWriter, r *http.Request) {
 
 		rowSinks = append(rowSinks, rowSink)
 	}
-	log.Printf("Control print of list struct before encoding to JSON:\n%v", rowSinks)
 	json.NewEncoder(w).Encode(rowSinks)
 }
 
@@ -182,9 +181,6 @@ func getListsID(w http.ResponseWriter, r *http.Request) {
 		rowSink.ID, _ = strconv.Atoi(*(content[0]))
 		rowSink.Title = *(content[1])
 
-		log.Printf("Endpoint GET /api/list/{id} raw DB return as map:\n%v", rows)
-		log.Printf("Endpoint GET /api/list/{id} raw Go struct representing a row:\n%v", rowSink)
-
 		json.NewEncoder(w).Encode(rowSink)
 	}
 }
@@ -206,24 +202,54 @@ func postLists(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Panic(err)
 	}
-	log.Printf("Go struct generated from requestBody:\n%+v", rowSink)
 
 	json.NewEncoder(w).Encode(rowSink)
+
 	// DB returns a string even though on DB level ID is an INTEGER!
+
 	listIDStr := strconv.Itoa(rowSink.ID)
 	listTitle := rowSink.Title
 	sqlStatement := fmt.Sprintf("INSERT INTO list (id,title) VALUES (%s,\"%s\");", listIDStr, listTitle)
-	log.Printf("SQL-Statement:\n%s", sqlStatement)
+	_, err = db.Exec(sqlStatement)
+
+	if err != nil {
+		log.Panic(err)
+	}
+}
+
+func patchListsID(w http.ResponseWriter, r *http.Request) {
+	log.Println("Hit REST end point PATCH /api/lists/{id}")
+	db := openDB()
+
+	var rowSink listTableJSON
+	reqBody, _ := ioutil.ReadAll(r.Body)
+
+	// vars := mux.Vars(r)
+	// title := vars["title"]
+
+	err := json.Unmarshal(reqBody, &rowSink)
+
+	if err != nil {
+		log.Panic(err)
+	}
+
+	// DB returns a string even though on DB level ID is an INTEGER!
+
+	listIDStr := strconv.Itoa(rowSink.ID)
+	listTitle := rowSink.Title
+	sqlStatement := fmt.Sprintf("UPDATE list SET title = \"%s\" WHERE id = %s;", listTitle, listIDStr)
 	_, err = db.Exec(sqlStatement)
 
 	if err != nil {
 		log.Panic(err)
 	}
 
-}
+	// Respond back to client
+	err = json.NewEncoder(w).Encode(rowSink)
 
-func patchListsID(w http.ResponseWriter, r *http.Request) {
-	log.Println("Hit REST end point PATCH /api/lists/{id}")
+	if err != nil {
+		log.Panic(err)
+	}
 }
 
 func patchListsGroceryItemID(w http.ResponseWriter, r *http.Request) {
