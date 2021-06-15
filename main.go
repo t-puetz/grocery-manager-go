@@ -93,7 +93,7 @@ func handleRESTRequests() *mux.Router {
 	router.HandleFunc(apiBasePath+"/lists", postLists).Methods("POST")
 	router.HandleFunc(apiBasePath+"/lists/{id}", patchListsID).Methods("PATCH")
 	router.HandleFunc(apiBasePath+"/lists/{id}/{groceryItemID}", patchListsGroceryItemID).Methods("PATCH")
-	router.HandleFunc(apiBasePath+"/lists/{id}", deleteListsGroceryItemID).Methods("DELETE")
+	router.HandleFunc(apiBasePath+"/lists/{id}", deleteLists).Methods("DELETE")
 	router.HandleFunc(apiBasePath+"/items", getItems).Methods("GET")
 	router.HandleFunc(apiBasePath+"/items", postItems).Methods("POST")
 	router.HandleFunc(apiBasePath+"/items/{id}", patchItems).Methods("PATCH")
@@ -252,8 +252,20 @@ func patchListsGroceryItemID(w http.ResponseWriter, r *http.Request) {
 	log.Println("Hit REST end point PATCH /api/lists/{id}/{groceryItemID}")
 }
 
-func deleteListsGroceryItemID(w http.ResponseWriter, r *http.Request) {
+func deleteLists(w http.ResponseWriter, r *http.Request) {
 	log.Println("Hit REST end point DELETE /api/lists/{id}")
+	db := openDB()
+
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	// DB returns a string even though on DB level ID is an INTEGER!
+	sqlStatement := fmt.Sprintf("DELETE FROM list WHERE id = %s;", id)
+	_, err := db.Exec(sqlStatement)
+
+	if err != nil {
+		log.Panic(err)
+	}
 }
 
 func getItems(w http.ResponseWriter, r *http.Request) {
