@@ -202,7 +202,6 @@ func postLists(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = json.NewEncoder(w).Encode(rowSink)
-	log.Printf("Potential err encoded JSON: %v\n", err)
 
 	if err != nil {
 		log.Panic(err)
@@ -213,7 +212,8 @@ func postLists(w http.ResponseWriter, r *http.Request) {
 	// DB returns a string even though on DB level ID is an INTEGER!
 	listIDStr := strconv.Itoa(rowSink.ID)
 	listTitle := rowSink.Title
-	sqlStatement := fmt.Sprintf("INSERT INTO list (id,title) VALUES (%s,%s);", listIDStr, listTitle)
+	sqlStatement := fmt.Sprintf("INSERT INTO list (id,title) VALUES (%s,\"%s\");", listIDStr, listTitle)
+	log.Printf("SQL-Statement:\n%s", sqlStatement)
 	_, err = db.Exec(sqlStatement)
 
 	if err != nil {
