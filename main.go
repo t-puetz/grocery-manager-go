@@ -20,23 +20,23 @@ import (
 // init functions run even before main does!
 
 type listTableJSON struct {
-	ID    int    `json: "ID"`
-	title string `json: "title"`
+	ID    int    `json: "id"`
+	Title string `json: "title"`
 }
 
 type listItemTableJSON struct {
-	groceryItemID int `json: "groceryItemID"`
-	quantity      int `json: "quantity"`
-	checked       int `json: "checked"`
-	position      int `json: "position"`
-	onList        int `json: "onList"`
+	GroceryItemID int `json: "groceryItemID"`
+	Quantity      int `json: "quantity"`
+	Checked       int `json: "checked"`
+	Position      int `json: "position"`
+	OnList        int `json: "onList"`
 }
 
 type groceryItemTableJSON struct {
 	ID      int    `json: "ID"`
-	name    string `json: "name"`
-	current int    `json: "current"`
-	maximum int    `json: "maximum"`
+	Name    string `json: "name"`
+	Current int    `json: "current"`
+	Maximum int    `json: "maximum"`
 }
 
 func main() {
@@ -129,16 +129,13 @@ func getLists(w http.ResponseWriter, r *http.Request) {
 		}
 
 		err = rows.Scan(ims[0], ims[1], ims[2])
-		// log.Printf("%v", *(content[0]))
-		// log.Printf("%v", *(content[1]))
-		// log.Printf("%v", *(content[2]))
 
 		if err != nil {
 			log.Panic(err)
 		}
 
 		rowSink.ID, _ = strconv.Atoi(*(content[0]))
-		rowSink.title = *(content[1])
+		rowSink.Title = *(content[1])
 
 		rowSinks = append(rowSinks, rowSink)
 	}
@@ -183,14 +180,11 @@ func getListsID(w http.ResponseWriter, r *http.Request) {
 		}
 
 		rowSink.ID, _ = strconv.Atoi(*(content[0]))
-		rowSink.title = *(content[1])
+		rowSink.Title = *(content[1])
 
 		log.Printf("Endpoint GET /api/list/{id} raw DB return as map:\n%v", rows)
 		log.Printf("Endpoint GET /api/list/{id} raw Go struct representing a row:\n%v", rowSink)
 
-		// TODO: Why does the browser same as with getLists()
-		// Only show JSON {"ID": 1}
-		// Although {"ID": 1, "title": "test_list"} is expected?
 		json.NewEncoder(w).Encode(rowSink)
 	}
 }
@@ -200,17 +194,25 @@ func postLists(w http.ResponseWriter, r *http.Request) {
 	db := openDB()
 
 	var rowSink listTableJSON
-	err := json.NewDecoder(r.Body).Decode(&rowSink)
+	reqBody, _ := ioutil.ReadAll(r.Body)
+	err := json.Unmarshal(reqBody, &rowSink)
 
 	if err != nil {
 		log.Panic(err)
 	}
 
+	err = json.NewEncoder(w).Encode(rowSink)
+	log.Printf("Potential err encoded JSON: %v\n", err)
+
+	if err != nil {
+		log.Panic(err)
+	}
 	log.Printf("Go struct generated from requestBody:\n%+v", rowSink)
 
+	json.NewEncoder(w).Encode(rowSink)
 	// DB returns a string even though on DB level ID is an INTEGER!
 	listIDStr := strconv.Itoa(rowSink.ID)
-	listTitle := rowSink.title
+	listTitle := rowSink.Title
 	sqlStatement := fmt.Sprintf("INSERT INTO list (id,title) VALUES (%s,%s);", listIDStr, listTitle)
 	_, err = db.Exec(sqlStatement)
 
