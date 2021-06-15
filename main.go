@@ -223,9 +223,6 @@ func patchListsID(w http.ResponseWriter, r *http.Request) {
 	var rowSink listTableJSON
 	reqBody, _ := ioutil.ReadAll(r.Body)
 
-	// vars := mux.Vars(r)
-	// title := vars["title"]
-
 	err := json.Unmarshal(reqBody, &rowSink)
 
 	if err != nil {
@@ -273,6 +270,22 @@ func patchItems(w http.ResponseWriter, r *http.Request) {
 
 func deleteItems(w http.ResponseWriter, r *http.Request) {
 	log.Println("Hit REST end point DELETE /api/items/{id}")
+	db := openDB()
+
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	// DB returns a string even though on DB level ID is an INTEGER!
+	sqlStatement := fmt.Sprintf("DELETE FROM grocery_item WHERE id = %s;", id)
+	_, err := db.Exec(sqlStatement)
+
+	if err != nil {
+		log.Panic(err)
+	}
+
+	if err != nil {
+		log.Panic(err)
+	}
 }
 
 // End webserver section
@@ -281,6 +294,12 @@ func deleteItems(w http.ResponseWriter, r *http.Request) {
 
 func openDB() *sql.DB {
 	db, err := sql.Open("sqlite3", "grocery-manager-go.sqlite")
+
+	if err != nil {
+		log.Panic(err)
+	}
+
+	_, err = db.Exec("PRAGMA foreign_keys = on;")
 
 	if err != nil {
 		log.Panic(err)
