@@ -283,9 +283,6 @@ func deleteItems(w http.ResponseWriter, r *http.Request) {
 		log.Panic(err)
 	}
 
-	if err != nil {
-		log.Panic(err)
-	}
 }
 
 // End webserver section
