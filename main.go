@@ -249,7 +249,44 @@ func patchListsID(w http.ResponseWriter, r *http.Request) {
 }
 
 func patchListsGroceryItemID(w http.ResponseWriter, r *http.Request) {
+	// Our goal is it to update a list_item record
 	log.Println("Hit REST end point PATCH /api/lists/{id}/{groceryItemID}")
+	db := openDB()
+
+	vars := mux.Vars(r)
+
+	for key := range vars {
+		log.Printf("%v", key)
+	}
+
+	list_id := vars["id"]
+	grocery_item_id := vars["groceryItemID"]
+
+	var rowSink listItemTableJSON
+	reqBody, _ := ioutil.ReadAll(r.Body)
+	err := json.Unmarshal(reqBody, &rowSink)
+
+	if err != nil {
+		log.Panic(err)
+	}
+
+	quantityAttr := rowSink.Quantity
+	checkedAttr := rowSink.Checked
+	positionAttr := rowSink.Position
+
+	sqlStatement := fmt.Sprintf("UPDATE list_item SET quantity = %d, checked = %d, position = %d WHERE on_list = %s AND grocery_item_id = %s;", quantityAttr, checkedAttr, positionAttr, list_id, grocery_item_id)
+	_, err = db.Exec(sqlStatement)
+
+	if err != nil {
+		log.Panic(err)
+	}
+
+	err = json.NewEncoder(w).Encode(rowSink)
+
+	if err != nil {
+		log.Panic(err)
+	}
+
 }
 
 func deleteLists(w http.ResponseWriter, r *http.Request) {
