@@ -307,6 +307,43 @@ func deleteLists(w http.ResponseWriter, r *http.Request) {
 
 func getItems(w http.ResponseWriter, r *http.Request) {
 	log.Println("Hit REST end point GET /api/items")
+	db := openDB()
+	sqlStatement := fmt.Sprintf("SELECT * from list_item;")
+	rows, err := db.Query(sqlStatement)
+
+	if err != nil {
+		log.Panic(err)
+	}
+
+	var rowSinks []listItemTableJSON
+
+	for rows.Next() {
+		var rowSink listItemTableJSON
+		content := make([]*string, 5)
+
+		//SQL Scan method parameter values must be of type interface{}. So we need an intermediate slice
+
+		ims := make([]interface{}, 5)
+
+		for i := range ims {
+			ims[i] = &content[i]
+		}
+
+		err = rows.Scan(ims[0], ims[1], ims[2], ims[3], ims[4])
+
+		if err != nil {
+			log.Panic(err)
+		}
+
+		rowSink.Checked, _ = strconv.Atoi(*(content[0]))
+		rowSink.GroceryItemID, _ = strconv.Atoi(*(content[1]))
+		rowSink.Quantity, _ = strconv.Atoi(*(content[2]))
+		rowSink.Position, _ = strconv.Atoi(*(content[3]))
+		rowSink.OnList, _ = strconv.Atoi(*(content[4]))
+
+		rowSinks = append(rowSinks, rowSink)
+	}
+	json.NewEncoder(w).Encode(rowSinks)
 }
 
 func postItems(w http.ResponseWriter, r *http.Request) {
@@ -331,7 +368,6 @@ func deleteItems(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Panic(err)
 	}
-
 }
 
 // End webserver section
