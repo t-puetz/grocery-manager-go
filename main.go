@@ -36,7 +36,7 @@ type groceryItemTableJSON struct {
 	ID      int    `json: "ID"`
 	Name    string `json: "name"`
 	Current int    `json: "current"`
-	Maximum int    `json: "maximum"`
+	Minimum int    `json: "minimum`
 }
 
 func main() {
@@ -348,6 +348,37 @@ func getItems(w http.ResponseWriter, r *http.Request) {
 
 func postItems(w http.ResponseWriter, r *http.Request) {
 	log.Println("Hit REST end point POST /api/items")
+	db := openDB()
+
+	var rowSink groceryItemTableJSON
+	reqBody, _ := ioutil.ReadAll(r.Body)
+	err := json.Unmarshal(reqBody, &rowSink)
+
+	if err != nil {
+		log.Panic(err)
+	}
+
+	// DB returns a string even though on DB level ID is an INTEGER!
+
+	id := rowSink.ID
+	name := rowSink.Name
+	minimum := rowSink.Minimum
+	current := rowSink.Current
+
+	sqlStatement := fmt.Sprintf("INSERT INTO grocery_item (id,name,current,minimum) VALUES (%d,\"%s\",%d,%d);", id, name, minimum, current)
+	log.Printf("SQL-Statement:\n%s\n", sqlStatement)
+	_, err = db.Exec(sqlStatement)
+
+	if err != nil {
+		log.Panic(err)
+	}
+
+	// Respond back to client
+	err = json.NewEncoder(w).Encode(rowSink)
+
+	if err != nil {
+		log.Panic(err)
+	}
 }
 
 func patchItems(w http.ResponseWriter, r *http.Request) {
