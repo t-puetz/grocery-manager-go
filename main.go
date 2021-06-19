@@ -383,6 +383,37 @@ func postItems(w http.ResponseWriter, r *http.Request) {
 
 func patchItems(w http.ResponseWriter, r *http.Request) {
 	log.Println("Hit REST end point PATCH /api/items/{id}")
+	db := openDB()
+
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	var rowSink groceryItemTableJSON
+	reqBody, _ := ioutil.ReadAll(r.Body)
+
+	err := json.Unmarshal(reqBody, &rowSink)
+
+	if err != nil {
+		log.Panic(err)
+	}
+
+	name := rowSink.Name
+	current := rowSink.Current
+	minimum := rowSink.Minimum
+
+	sqlStatement := fmt.Sprintf("UPDATE grocery_item SET name = \"%s\", current = %d, minimum = %d WHERE id = %s;", name, current, minimum, id)
+	_, err = db.Exec(sqlStatement)
+
+	if err != nil {
+		log.Panic(err)
+	}
+
+	// Respond back to client
+	err = json.NewEncoder(w).Encode(rowSink)
+
+	if err != nil {
+		log.Panic(err)
+	}
 }
 
 func deleteItems(w http.ResponseWriter, r *http.Request) {
