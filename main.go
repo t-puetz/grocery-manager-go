@@ -71,8 +71,13 @@ func parseFlags() map[string]string {
 	return flagMap
 }
 
-// Start webserver section
+func ifErrorLogPanicError(err error) {
+	if err != nil {
+		log.Panic(err)
+	}
+}
 
+// Start webserver section
 func srvMain(port int) {
 	router := handleRESTRequests()
 	startWebSrv(port, router)
@@ -107,10 +112,7 @@ func getLists(w http.ResponseWriter, r *http.Request) {
 
 	db := openDB()
 	rows, err := db.Query("SELECT * FROM list;")
-
-	if err != nil {
-		log.Panic(err)
-	}
+	ifErrorLogPanicError(err)
 
 	log.Printf("Endpoint GET /api/lists raw DB return as map:\n%v", rows)
 
@@ -118,25 +120,21 @@ func getLists(w http.ResponseWriter, r *http.Request) {
 
 	for rows.Next() {
 		var rowSink listTableJSON
-		content := make([]*string, 3)
+		content := make([]*string, 2)
 
 		//SQL Scan method parameter values must be of type interface{}. So we need an intermediate slice
 
-		ims := make([]interface{}, 3)
+		ims := make([]interface{}, 2)
 
 		for i := range ims {
 			ims[i] = &content[i]
 		}
 
-		err = rows.Scan(ims[0], ims[1], ims[2])
-
-		if err != nil {
-			log.Panic(err)
-		}
+		err = rows.Scan(ims[0], ims[1])
+		ifErrorLogPanicError(err)
 
 		rowSink.ID, _ = strconv.Atoi(*(content[0]))
 		rowSink.Title = *(content[1])
-
 		rowSinks = append(rowSinks, rowSink)
 	}
 	json.NewEncoder(w).Encode(rowSinks)
@@ -149,13 +147,11 @@ func getListsID(w http.ResponseWriter, r *http.Request) {
 	key := vars["id"]
 
 	db := openDB()
+
 	// DB returns a string even though on DB level ID is an INTEGER!
 	query := fmt.Sprintf("SELECT * FROM list where id = %s;", key)
 	rows, err := db.Query(query)
-
-	if err != nil {
-		log.Panic(err)
-	}
+	ifErrorLogPanicError(err)
 
 	var rowSink listTableJSON
 	content := make([]*string, 3)
@@ -173,10 +169,7 @@ func getListsID(w http.ResponseWriter, r *http.Request) {
 		}
 
 		err = rows.Scan(ims[0], ims[1], ims[2])
-
-		if err != nil {
-			log.Panic(err)
-		}
+		ifErrorLogPanicError(err)
 
 		rowSink.ID, _ = strconv.Atoi(*(content[0]))
 		rowSink.Title = *(content[1])
@@ -187,15 +180,14 @@ func getListsID(w http.ResponseWriter, r *http.Request) {
 
 func postLists(w http.ResponseWriter, r *http.Request) {
 	log.Println("Hit REST end point POST /api/lists")
+
 	db := openDB()
 
 	var rowSink listTableJSON
+
 	reqBody, _ := ioutil.ReadAll(r.Body)
 	err := json.Unmarshal(reqBody, &rowSink)
-
-	if err != nil {
-		log.Panic(err)
-	}
+	ifErrorLogPanicError(err)
 
 	// DB returns a string even though on DB level ID is an INTEGER!
 
@@ -203,17 +195,12 @@ func postLists(w http.ResponseWriter, r *http.Request) {
 	listTitle := rowSink.Title
 	sqlStatement := fmt.Sprintf("INSERT INTO list (id,title) VALUES (%s,\"%s\");", listIDStr, listTitle)
 	_, err = db.Exec(sqlStatement)
-
-	if err != nil {
-		log.Panic(err)
-	}
+	ifErrorLogPanicError(err)
 
 	// Respond back to client
 	err = json.NewEncoder(w).Encode(rowSink)
 
-	if err != nil {
-		log.Panic(err)
-	}
+	ifErrorLogPanicError(err)
 }
 
 func patchListsID(w http.ResponseWriter, r *http.Request) {
@@ -224,10 +211,7 @@ func patchListsID(w http.ResponseWriter, r *http.Request) {
 	reqBody, _ := ioutil.ReadAll(r.Body)
 
 	err := json.Unmarshal(reqBody, &rowSink)
-
-	if err != nil {
-		log.Panic(err)
-	}
+	ifErrorLogPanicError(err)
 
 	// DB returns a string even though on DB level ID is an INTEGER!
 
@@ -235,17 +219,11 @@ func patchListsID(w http.ResponseWriter, r *http.Request) {
 	listTitle := rowSink.Title
 	sqlStatement := fmt.Sprintf("UPDATE list SET title = \"%s\" WHERE id = %s;", listTitle, listIDStr)
 	_, err = db.Exec(sqlStatement)
-
-	if err != nil {
-		log.Panic(err)
-	}
+	ifErrorLogPanicError(err)
 
 	// Respond back to client
 	err = json.NewEncoder(w).Encode(rowSink)
-
-	if err != nil {
-		log.Panic(err)
-	}
+	ifErrorLogPanicError(err)
 }
 
 func patchListsGroceryItemID(w http.ResponseWriter, r *http.Request) {
@@ -265,10 +243,7 @@ func patchListsGroceryItemID(w http.ResponseWriter, r *http.Request) {
 	var rowSink listItemTableJSON
 	reqBody, _ := ioutil.ReadAll(r.Body)
 	err := json.Unmarshal(reqBody, &rowSink)
-
-	if err != nil {
-		log.Panic(err)
-	}
+	ifErrorLogPanicError(err)
 
 	quantityAttr := rowSink.Quantity
 	checkedAttr := rowSink.Checked
@@ -276,17 +251,10 @@ func patchListsGroceryItemID(w http.ResponseWriter, r *http.Request) {
 
 	sqlStatement := fmt.Sprintf("UPDATE list_item SET quantity = %d, checked = %d, position = %d WHERE on_list = %s AND grocery_item_id = %s;", quantityAttr, checkedAttr, positionAttr, list_id, grocery_item_id)
 	_, err = db.Exec(sqlStatement)
-
-	if err != nil {
-		log.Panic(err)
-	}
+	ifErrorLogPanicError(err)
 
 	err = json.NewEncoder(w).Encode(rowSink)
-
-	if err != nil {
-		log.Panic(err)
-	}
-
+	ifErrorLogPanicError(err)
 }
 
 func deleteLists(w http.ResponseWriter, r *http.Request) {
@@ -299,21 +267,16 @@ func deleteLists(w http.ResponseWriter, r *http.Request) {
 	// DB returns a string even though on DB level ID is an INTEGER!
 	sqlStatement := fmt.Sprintf("DELETE FROM list WHERE id = %s;", id)
 	_, err := db.Exec(sqlStatement)
-
-	if err != nil {
-		log.Panic(err)
-	}
+	ifErrorLogPanicError(err)
 }
 
 func getItems(w http.ResponseWriter, r *http.Request) {
 	log.Println("Hit REST end point GET /api/items")
+
 	db := openDB()
 	sqlStatement := fmt.Sprintf("SELECT * from list_item;")
 	rows, err := db.Query(sqlStatement)
-
-	if err != nil {
-		log.Panic(err)
-	}
+	ifErrorLogPanicError(err)
 
 	var rowSinks []listItemTableJSON
 
@@ -330,10 +293,7 @@ func getItems(w http.ResponseWriter, r *http.Request) {
 		}
 
 		err = rows.Scan(ims[0], ims[1], ims[2], ims[3], ims[4])
-
-		if err != nil {
-			log.Panic(err)
-		}
+		ifErrorLogPanicError(err)
 
 		rowSink.Checked, _ = strconv.Atoi(*(content[0]))
 		rowSink.GroceryItemID, _ = strconv.Atoi(*(content[1]))
@@ -351,12 +311,10 @@ func postItems(w http.ResponseWriter, r *http.Request) {
 	db := openDB()
 
 	var rowSink groceryItemTableJSON
+
 	reqBody, _ := ioutil.ReadAll(r.Body)
 	err := json.Unmarshal(reqBody, &rowSink)
-
-	if err != nil {
-		log.Panic(err)
-	}
+	ifErrorLogPanicError(err)
 
 	// DB returns a string even though on DB level ID is an INTEGER!
 
@@ -368,17 +326,11 @@ func postItems(w http.ResponseWriter, r *http.Request) {
 	sqlStatement := fmt.Sprintf("INSERT INTO grocery_item (id,name,current,minimum) VALUES (%d,\"%s\",%d,%d);", id, name, minimum, current)
 	log.Printf("SQL-Statement:\n%s\n", sqlStatement)
 	_, err = db.Exec(sqlStatement)
-
-	if err != nil {
-		log.Panic(err)
-	}
+	ifErrorLogPanicError(err)
 
 	// Respond back to client
 	err = json.NewEncoder(w).Encode(rowSink)
-
-	if err != nil {
-		log.Panic(err)
-	}
+	ifErrorLogPanicError(err)
 }
 
 func patchItems(w http.ResponseWriter, r *http.Request) {
@@ -392,10 +344,7 @@ func patchItems(w http.ResponseWriter, r *http.Request) {
 	reqBody, _ := ioutil.ReadAll(r.Body)
 
 	err := json.Unmarshal(reqBody, &rowSink)
-
-	if err != nil {
-		log.Panic(err)
-	}
+	ifErrorLogPanicError(err)
 
 	name := rowSink.Name
 	current := rowSink.Current
@@ -403,17 +352,11 @@ func patchItems(w http.ResponseWriter, r *http.Request) {
 
 	sqlStatement := fmt.Sprintf("UPDATE grocery_item SET name = \"%s\", current = %d, minimum = %d WHERE id = %s;", name, current, minimum, id)
 	_, err = db.Exec(sqlStatement)
-
-	if err != nil {
-		log.Panic(err)
-	}
+	ifErrorLogPanicError(err)
 
 	// Respond back to client
 	err = json.NewEncoder(w).Encode(rowSink)
-
-	if err != nil {
-		log.Panic(err)
-	}
+	ifErrorLogPanicError(err)
 }
 
 func deleteItems(w http.ResponseWriter, r *http.Request) {
@@ -426,10 +369,7 @@ func deleteItems(w http.ResponseWriter, r *http.Request) {
 	// DB returns a string even though on DB level ID is an INTEGER!
 	sqlStatement := fmt.Sprintf("DELETE FROM grocery_item WHERE id = %s;", id)
 	_, err := db.Exec(sqlStatement)
-
-	if err != nil {
-		log.Panic(err)
-	}
+	ifErrorLogPanicError(err)
 }
 
 // End webserver section
@@ -439,16 +379,9 @@ func deleteItems(w http.ResponseWriter, r *http.Request) {
 func openDB() *sql.DB {
 	db, err := sql.Open("sqlite3", "grocery-manager-go.sqlite")
 
-	if err != nil {
-		log.Panic(err)
-	}
-
+	ifErrorLogPanicError(err)
 	_, err = db.Exec("PRAGMA foreign_keys = on;")
-
-	if err != nil {
-		log.Panic(err)
-	}
-
+	ifErrorLogPanicError(err)
 	log.Println("sqlite3 DB opened successfully (grocery-manager-go.sqlite)")
 
 	return db
@@ -456,11 +389,7 @@ func openDB() *sql.DB {
 
 func readInDBSchemeDefinition() string {
 	content, err := ioutil.ReadFile("db.scheme")
-
-	if err != nil {
-		log.Panic(err)
-	}
-
+	ifErrorLogPanicError(err)
 	contentStr := string(content)
 	return contentStr
 }
@@ -469,11 +398,7 @@ func createScheme(db *sql.DB, dbscheme string) {
 	defer db.Close()
 
 	_, err := db.Exec(dbscheme)
-
-	if err != nil {
-		log.Panic(err)
-	}
-
+	ifErrorLogPanicError(err)
 	log.Println("sqlite DB grocery-manager-go.sqlite is setup and ready...")
 }
 
