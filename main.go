@@ -77,6 +77,18 @@ func ifErrorLogPanicError(err error) {
 	}
 }
 
+func createSinkSliceForRecords(numColumns int, pContent *[]*string) *[]interface{} {
+	//SQL Scan method parameter values must be of type interface{}. So we need an intermediate slice
+	ims := make([]interface{}, numColumns)
+	content := *pContent
+
+	for i := range ims {
+		ims[i] = &content[i]
+	}
+
+	return &ims
+}
+
 // Start webserver section
 func srvMain(port int) {
 	router := handleRESTRequests()
@@ -120,15 +132,11 @@ func getLists(w http.ResponseWriter, r *http.Request) {
 
 	for rows.Next() {
 		var rowSink listTableJSON
-		content := make([]*string, 2)
 
 		//SQL Scan method parameter values must be of type interface{}. So we need an intermediate slice
-
-		ims := make([]interface{}, 2)
-
-		for i := range ims {
-			ims[i] = &content[i]
-		}
+		content := make([]*string, 2)
+		pIms := createSinkSliceForRecords(2, &content)
+		ims := *pIms
 
 		err = rows.Scan(ims[0], ims[1])
 		ifErrorLogPanicError(err)
@@ -154,19 +162,13 @@ func getListsID(w http.ResponseWriter, r *http.Request) {
 	ifErrorLogPanicError(err)
 
 	var rowSink listTableJSON
-	content := make([]*string, 2)
-
-	//SQL Scan method parameter values must be of type interface{}. So we need an intermediate slice
-
-	ims := make([]interface{}, 2)
-
-	for i := range ims {
-		ims[i] = &content[i]
-	}
 
 	// Although we can be SURE there will only be one Result
 	// sql still expects us to call .Next() or else it will fail
 	for rows.Next() {
+		content := make([]*string, 2)
+		pIms := createSinkSliceForRecords(2, &content)
+		ims := *pIms
 
 		err = rows.Scan(ims[0], ims[1])
 		ifErrorLogPanicError(err)
@@ -282,15 +284,10 @@ func getItems(w http.ResponseWriter, r *http.Request) {
 
 	for rows.Next() {
 		var rowSink listItemTableJSON
+
 		content := make([]*string, 5)
-
-		//SQL Scan method parameter values must be of type interface{}. So we need an intermediate slice
-
-		ims := make([]interface{}, 5)
-
-		for i := range ims {
-			ims[i] = &content[i]
-		}
+		pIms := createSinkSliceForRecords(5, &content)
+		ims := *pIms
 
 		err = rows.Scan(ims[0], ims[1], ims[2], ims[3], ims[4])
 		ifErrorLogPanicError(err)
