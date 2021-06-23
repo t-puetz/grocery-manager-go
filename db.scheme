@@ -1,12 +1,12 @@
 CREATE TABLE IF NOT EXISTS grocery_item (
-    id INTEGER not null PRIMARY KEY,
+    id INTEGER not null PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     current INTEGER NOT NULL,
     minimum INTEGER NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS list (
-    id INTEGER not null PRIMARY KEY,
+    id INTEGER not null PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL
 );
 
