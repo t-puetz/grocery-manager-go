@@ -154,21 +154,21 @@ func getListsID(w http.ResponseWriter, r *http.Request) {
 	ifErrorLogPanicError(err)
 
 	var rowSink listTableJSON
-	content := make([]*string, 3)
+	content := make([]*string, 2)
 
 	//SQL Scan method parameter values must be of type interface{}. So we need an intermediate slice
 
-	ims := make([]interface{}, 3)
+	ims := make([]interface{}, 2)
+
+	for i := range ims {
+		ims[i] = &content[i]
+	}
 
 	// Although we can be SURE there will only be one Result
 	// sql still expects us to call .Next() or else it will fail
 	for rows.Next() {
 
-		for i := range ims {
-			ims[i] = &content[i]
-		}
-
-		err = rows.Scan(ims[0], ims[1], ims[2])
+		err = rows.Scan(ims[0], ims[1])
 		ifErrorLogPanicError(err)
 
 		rowSink.ID, _ = strconv.Atoi(*(content[0]))
