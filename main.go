@@ -90,19 +90,7 @@ func createSinkSliceForRecords(numColumns int, pContent *[]*string) *[]interface
 	return &ims
 }
 
-/* func concatInsertIntoSQLStatement(table string, columns []string, formatters []string) string {
-	fixedFmtStrOne := "INSERT INTO "
-	fixedFmtStrTwo := " ("
-	fixedFmtStrThree := ") VALUES ("
-	fixedFmtStrFour := ");"
-
-	sqlStatementBase := fixedFmtStrOne + table + fixedFmtStrTwo + strings.Join(columns, ",") + fixedFmtStrThree + strings.Join(formatters, ",") + fixedFmtStrFour
-	log.Printf("concatInsertIntoSQLStatement(): Returned SQL-Statement:\n%s\n", sqlStatementBase)
-	return sqlStatementBase
-}*/
-
 func concatUpdateSQLStatement(table string, foreignKeys []string, columns []string, formatters []string) string {
-	//sqlStatement := fmt.Sprintf("UPDATE list_item SET quantity = %d, checked = %d, position = %d WHERE on_list = %s AND grocery_item_id = %s;", quantity, checked, position, listID, groceryItemID)
 	fixedFmtStrOne := "UPDATE " + table + " SET "
 
 	for i := range columns {
@@ -128,7 +116,7 @@ func concatUpdateSQLStatement(table string, foreignKeys []string, columns []stri
 
 	fixedFmtStrOne += ";"
 	sqlStatementBase := fixedFmtStrOne
-	log.Printf("concatUpdateSQLStatement(): Returned SQL-Statement:\n%s\n", sqlStatementBase)
+
 	return sqlStatementBase
 }
 
@@ -353,8 +341,6 @@ func patchListsGroceryItemID(w http.ResponseWriter, r *http.Request) {
 		sqlStatement = fmt.Sprintf(sqlStatementBase, quantity, checked, position, listID, groceryItemID)
 	}
 
-	log.Printf("patchListsGroceryItemID() SQL-Statement:\n%s\n", sqlStatement)
-
 	_, err = db.Exec(sqlStatement)
 	ifErrorLogPanicError(err)
 	err = json.NewEncoder(w).Encode(rowSink)
@@ -487,11 +473,26 @@ func patchItems(w http.ResponseWriter, r *http.Request) {
 	if name == "-1" && current == -1 {
 		sqlStatementBase = concatUpdateSQLStatement("grocery_item", []string{"id"}, []string{"minimum"}, []string{"%d", "\"%s\""})
 		sqlStatement = fmt.Sprintf(sqlStatementBase, minimum, id)
+	} else if name == "-1" && minimum == -1 {
+		sqlStatementBase = concatUpdateSQLStatement("grocery_item", []string{"id"}, []string{"current"}, []string{"%d", "\"%s\""})
+		sqlStatement = fmt.Sprintf(sqlStatementBase, current, id)
+	} else if current == -1 && minimum == -1 {
+		sqlStatementBase = concatUpdateSQLStatement("grocery_item", []string{"id"}, []string{"name"}, []string{"\"%s\"", "\"%s\""})
+		sqlStatement = fmt.Sprintf(sqlStatementBase, current, id)
+	} else if name == "-1" {
+		sqlStatementBase = concatUpdateSQLStatement("grocery_item", []string{"id"}, []string{"current", "minimum"}, []string{"%d", "%d", "\"%s\""})
+		sqlStatement = fmt.Sprintf(sqlStatementBase, current, minimum, id)
+	} else if current == "-1" {
+		sqlStatementBase = concatUpdateSQLStatement("grocery_item", []string{"id"}, []string{"name", "minimum"}, []string{"\"%s\"", "%d", "\"%s\""})
+		sqlStatement = fmt.Sprintf(sqlStatementBase, name, minimum, id)
+	} else if minimum == "-1" {
+		sqlStatementBase = concatUpdateSQLStatement("grocery_item", []string{"id"}, []string{"name", "current"}, []string{"\"%s\"", "%d", "\"%s\""})
+		sqlStatement = fmt.Sprintf(sqlStatementBase, name, current, id)
+	} else {
+		sqlStatementBase = concatUpdateSQLStatement("grocery_item", []string{"id"}, []string{"name", "current", "minimum"}, []string{"\"%s\"", "%d", "%d", "\"%s\""})
+		sqlStatement = fmt.Sprintf(sqlStatementBase, name, current, minimum, id)
 	}
 
-	log.Printf("patchItems() SQL-Statement:\n%s\n", sqlStatement)
-
-	//sqlStatement := fmt.Sprintf("UPDATE grocery_item SET name = \"%s\", current = %d, minimum = %d WHERE id = %s;", name, current, minimum, id)
 	_, err = db.Exec(sqlStatement)
 	ifErrorLogPanicError(err)
 
